@@ -109,10 +109,8 @@ all: bin/$(OUTPUT)
 # Include header dependencies.
 -include $(HEADER_DEPS)
 
-
 # Link rules for the final executable.
 bin/$(OUTPUT): GNUmakefile linker.lds $(OBJ)
-	mkdir -p obj src
 	mkdir -p "$$(dirname $@)"
 	$(LD) $(OBJ) $(LDFLAGS) -o $@
 
@@ -134,4 +132,5 @@ obj/%.asm.o: %.asm GNUmakefile
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
-	rm -rf bin obj
+	rm -rf bin obj iso_root image.iso limine
+    

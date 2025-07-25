@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <limine.h>
 
+
+// Variables
+
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
@@ -16,8 +19,7 @@ static volatile LIMINE_BASE_REVISION(3);
 // once or marked as used with the "used" attribute as done here.
 
 __attribute__((used, section(".limine_requests")))
-static volatile struct limine_framebuffer_request framebuffer_request = 
-{
+static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0
 };
@@ -37,8 +39,7 @@ static volatile LIMINE_REQUESTS_END_MARKER;
 // DO NOT remove or rename these functions, or stuff will eventually break!
 // They CAN be moved to a different .c file.
 
-void *memcpy(void *dest, const void *src, size_t n)
-{
+void *memcpy(void *dest, const void *src, size_t n) {
     uint8_t *pdest = (uint8_t *)dest;
     const uint8_t *psrc = (const uint8_t *)src;
 
@@ -49,8 +50,7 @@ void *memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
-void *memset(void *s, int c, size_t n) 
-{
+void *memset(void *s, int c, size_t n) {
     uint8_t *p = (uint8_t *)s;
 
     for (size_t i = 0; i < n; i++) {
@@ -60,8 +60,7 @@ void *memset(void *s, int c, size_t n)
     return s;
 }
 
-void *memmove(void *dest, const void *src, size_t n) 
-{
+void *memmove(void *dest, const void *src, size_t n) {
     uint8_t *pdest = (uint8_t *)dest;
     const uint8_t *psrc = (const uint8_t *)src;
 
@@ -78,8 +77,7 @@ void *memmove(void *dest, const void *src, size_t n)
     return dest;
 }
 
-int memcmp(const void *s1, const void *s2, size_t n) 
-{
+int memcmp(const void *s1, const void *s2, size_t n) {
     const uint8_t *p1 = (const uint8_t *)s1;
     const uint8_t *p2 = (const uint8_t *)s2;
 
@@ -99,33 +97,46 @@ static void hcf(void) {
     }
 }
 
-
-void kmain(void)
+void write_string( int colour, const char *string, int *limine_framebuffer )
 {
-    // make sure bootloader understands the base revision
-    if (LIMINE_BASE_REVISION_SUPPORTED == false) 
+    while( *string != 0 )
     {
+        *limine_framebuffer++ = *string++;
+        *limine_framebuffer++ = colour;
+    }
+}
+
+// The following will be our kernel's entry point.
+// If renaming kmain() to something else, make sure to change the
+// linker script accordingly.
+void kmain(void) {
+    // Ensure the bootloader actually understands our base revision (see spec).
+    if (LIMINE_BASE_REVISION_SUPPORTED == false) {
         hcf();
     }
 
-    // do we got a framebuffer?
-    if (framebuffer_request.response == NULL 
-     || framebuffer_request.response->framebuffer_count < 1) 
-        {
-            hcf();
-        } 
-
-    // Fetch the first framebuffer
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-    // draws a diagonal line
-    for (size_t i = 0; i < 100; i++) 
-    {
-        volatile uint32_t *fb_ptr = framebuffer->address;
-        fb_ptr[i * (framebuffer->pitch / 4) +i] = 0xffffff;
+    // Ensure we got a framebuffer.
+    if (framebuffer_request.response == NULL
+     || framebuffer_request.response->framebuffer_count < 1) {
+        hcf();
     }
 
+    // Fetch the first framebuffer.
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+    
 
-    // HALT BITCH   
+
+
+    // Note: we assume the framebuffer model is RGB with 32-bit pixels.
+    //for (size_t i = 0; i < 500; i++) {
+        //volatile uint32_t *fb_ptr = framebuffer->address;
+        //fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
+    //}
+
+    
+    write_string(0xffffff, "abcddd", framebuffer);
+
+
+    // We're done, just hang...
     hcf();
-};
+}
