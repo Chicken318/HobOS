@@ -97,14 +97,18 @@ static void hcf(void) {
     }
 }
 
-void write_string( int colour, const char *string, int *limine_framebuffer )
+
+void draw_pixel32(int x, int y, uint32_t color_value)
 {
-    while( *string != 0 )
-    {
-        *limine_framebuffer++ = *string++;
-        *limine_framebuffer++ = colour;
-    }
+    // finds the first framebuffer
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+    // sets offset to the width of the framebuffer * y + x
+    int offset = framebuffer->pitch * y + x;
+    volatile uint32_t *fb_ptr = (framebuffer->address + offset);
+    fb_ptr[framebuffer->pitch / 4] = color_value;
 }
+
+
 
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
@@ -121,20 +125,13 @@ void kmain(void) {
         hcf();
     }
 
-    // Fetch the first framebuffer.
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    
-
-
-
-    // Note: we assume the framebuffer model is RGB with 32-bit pixels.
-    //for (size_t i = 0; i < 500; i++) {
-        //volatile uint32_t *fb_ptr = framebuffer->address;
-        //fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-    //}
-
-    
-    write_string(0xffffff, "abcddd", framebuffer);
+    draw_pixel32(0,0, 0xffffff);
+    draw_pixel32(1,1, 0xffffff);
+    draw_pixel32(25,5, 0xffffff);
+    draw_pixel32(122,0, 0xffffff);
+    draw_pixel32(1,32, 0xffffff);
+    draw_pixel32(95,98, 0xffffff);
+    draw_pixel32(300,300, 0xffffff);
 
 
     // We're done, just hang...
